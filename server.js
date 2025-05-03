@@ -7,17 +7,6 @@ import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 
-// Initialize app
-const app = express();
-
-// Middleware
-app.use(bodyParser.json());
-app.use(cors());
-
-// Routes
-app.use("/api/v1", authRoutes);
-
-// Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log("MongoDB connected");
