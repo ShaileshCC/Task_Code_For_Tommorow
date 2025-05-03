@@ -7,26 +7,68 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import config from "../config/config.js";
 
-export const signup = asyncHandler(async (req, res, next) => {
+// export const signup = asyncHandler(async (req, res, next) => {
+//   const { firstName, lastName, email, password } = req.body;
+
+//   console.log("Received data for signup:", { firstName, lastName, email, password });
+
+//   // Check if user exists
+//   const existingUser = await User.findOne({ email });
+//   if (existingUser) {
+//     console.log("User already exists:", existingUser);
+//     return next(new ApiError(409, "User with this email already exists"));
+//   }
+
+//   // Create user
+//   let user;
+//   try {
+//     user = await User.create({
+//       firstName,
+//       lastName,
+//       email,
+//       password,
+//     });
+//     console.log("User created successfully:", user);
+//   } catch (err) {
+//     console.error("Error creating user:", err);
+//     return next(new ApiError(500, "Error creating user"));
+//   }
+
+//   // Create JWT token
+//   let token;
+//   try {
+//     token = jwt.sign({ id: user._id }, config.JWT_SECRET, { expiresIn: "1h" });
+//     console.log("JWT Token generated:", token);
+//   } catch (err) {
+//     console.error("Error generating JWT token:", err);
+//     return next(new ApiError(500, "Error generating JWT token"));
+//   }
+
+//   return res.status(201).send(new ApiResponse(201, { user, token }, "User registered successfully"));
+// });
+
+export const signup = asyncHandler(async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
 
+  if (![firstName, lastName, email, password].every(field => field?.trim())) {
+    throw new ApiError(400, "All fields are required");
+  }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new ApiError(409, "User with this email already exists");
   }
 
+  const user = await User.create({ firstName, lastName, email, password });
 
-  const user = await User.create({
-    firstName,
-    lastName,
-    email,
-    password,
-  });
+  const createdUser = await User.findById(user._id).select("-password -refreshToken");
+  if (!createdUser) {
+    throw new ApiError(500, "Something went wrong while registering user");
+  }
 
-  const token = jwt.sign({ id: user._id }, config.JWT_SECRET, { expiresIn: "1h" });
-  res.status(201).send(new ApiResponse(201, { user, token }, "User registered successfully"));
-
+  return res.status(201).json(
+    new ApiResponse(201, createdUser, "User registered successfully")
+  );
 });
 
 
